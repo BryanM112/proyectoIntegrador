@@ -41,5 +41,39 @@ datasource:
   username: ${DB_USERNAME}
   password: ${DB_PASSWORD}
 
-## Roles
+## Módulo de Roles
 
+Implementamos el primer módulo de la API, corresponde a los roles del sistema.
+
+Los roles disponibles son:
+- ADMIN
+- ORGANIZER
+- PARTICIPANT
+
+Estos valores son datos ya cargados en PostgreSQL mediante la migración de Flyway
+
+La estructura es la siguiente:
+
+```text
+src/main/java/ec/edu/ups/icc/proyectointegrador/roles
+├── controllers
+│   └── RoleController.java
+├── dtos
+│   └── RoleResponseDto.java
+├── entities
+│   └── RoleEntity.java
+├── enums
+│   └── RoleName.java
+├── mappers
+│   └── RoleMapper.java
+├── repositories
+│   └── RoleRepository.java
+└── services
+    ├── RoleService.java
+    └── impl
+        └── RoleServiceImpl.java
+```
+
+Entonces el módulo de roles quedo en perfecto funcionamiento. Usamos Powershell para comprobarlo debido a que por el momento Spring Security Crea automáticamente un usuario temporal. No sería comveniente usar Bruno porque habría que actualizar constantemente la contraseña en cada ejecución. Se usará Bruno cuando cuando se implemente la autenticación real con JWT.
+
+![Verificación del módulo roles](/assets/roles-powershell-JSON.png)
