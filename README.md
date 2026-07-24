@@ -40,3 +40,6 @@ datasource:
   url: ${DB_URL}
   username: ${DB_USERNAME}
   password: ${DB_PASSWORD}
+
+## Roles
+
