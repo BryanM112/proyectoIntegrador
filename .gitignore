@@ -35,3 +35,20 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Environment variables and secrets ###
+.env
+.env.*
+!.env.example
+
+application-local.yaml
+application-local.yml
+application-local.properties
+
+### Logs ###
+*.log
+logs/
+
+### Operating system ###
+.DS_Store
+Thumbs.db

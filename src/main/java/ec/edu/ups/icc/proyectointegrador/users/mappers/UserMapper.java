@@ -4,6 +4,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Component;
 
+import ec.edu.ups.icc.proyectointegrador.roles.entities.RoleEntity;
 import ec.edu.ups.icc.proyectointegrador.users.dtos.UserResponseDto;
 import ec.edu.ups.icc.proyectointegrador.users.entities.UserEntity;
 
@@ -16,7 +17,7 @@ public class UserMapper {
             entity.getLastName(),
             entity.getEmail(),
             entity.getStatus(),
-            entity.getRoles().stream().map(role -> role.getName()).collect(Collectors.toSet()),
+            entity.getRoles().stream().map(RoleEntity::getName).collect(Collectors.toSet()),
             entity.getCreatedAt(),
             entity.getUpdatedAt()
         );

@@ -35,6 +35,12 @@ spring:
     locations: classpath:db/migration
     validate-on-migrate: true
 
+security:
+  jwt:
+    secret: ${JWT_SECRET}
+    access-expiration: ${JWT_ACCESS_EXPIRATION:15m}
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:7d}
+
 management:
   endpoints:
     web:
