@@ -77,3 +77,38 @@ src/main/java/ec/edu/ups/icc/proyectointegrador/roles
 Entonces el módulo de roles quedo en perfecto funcionamiento. Usamos Powershell para comprobarlo debido a que por el momento Spring Security Crea automáticamente un usuario temporal. No sería comveniente usar Bruno porque habría que actualizar constantemente la contraseña en cada ejecución. Se usará Bruno cuando cuando se implemente la autenticación real con JWT.
 
 ![Verificación del módulo roles](/assets/roles-powershell-JSON.png)
+
+## Módulo de Usuarios
+
+Implementamos el segundo módulo de la API, corresponde a los usuarios del sistema.
+
+Cada usuario puede tener uno o varios roles asignados mediante la tabla intermedia `user_roles`. El estado administrativo del usuario (`ACTIVE` o `BLOCKED`) se almacena en la columna `status`.
+
+La estructura es la siguiente:
+
+```text
+src/main/java/ec/edu/ups/icc/proyectointegrador/users
+├── controllers
+│   └── UserController.java
+├── dtos
+│   └── UserResponseDto.java
+├── entities
+│   └── UserEntity.java
+├── enums
+│   └── UserStatus.java
+├── mappers
+│   └── UserMapper.java
+├── repositories
+│   └── UserRepository.java
+└── services
+    ├── UserService.java
+    └── impl
+        └── UserServiceImpl.java
+```
+
+El `UserResponseDto` no expone `passwordHash` en ningún momento, evitando filtrar la contraseña cifrada del usuario.
+
+Se probó igual que el módulo de roles, usando PowerShell con la contraseña temporal generada por Spring Security.
+
+![Verificación del módulo usuarios - listado](/assets/users-powershell-list.png)
+![Verificación del módulo usuarios - por id](/assets/users-powershell-id.png)
