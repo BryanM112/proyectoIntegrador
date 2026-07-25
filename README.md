@@ -501,3 +501,118 @@ Solicitud:
 Es este módulo la implementación permitió establecer un sistema de seguridad completo para la API. Los usuarios pueden registrarse e iniciar sesión, mientras que el servidor genera access tokens de corta duración y refresh tokens renovables.
 
 El almacenamiento del hash de los refresh tokens mejora la protección de las sesiones. Además, la rotación impide que un token utilizado previamente pueda volver a renovar la sesión.
+
+## Módulo categorías
+
+Esta parte implementa las operaciones CRUD. La elimianción lógica, que evita borrar físicamente registros que podrían estar relacionados con eventos existentes.
+
+Las operaciones de consulta están disponibles para cualquier usuario autenticado, mientras que la creación, actualización y eliminación de categorías están restringidas al rol ADMIN.
+
+Estructura
+```text
+categories
+├── controllers
+│   └── CategoryController.java
+├── dtos
+│   ├── CategoryResponseDto.java
+│   ├── CreateCategoryDto.java
+│   └── UpdateCategoryDto.java
+├── entities
+│   └── CategoryEntity.java
+├── mappers
+│   └── CategoryMapper.java
+├── repositories
+│   └── CategoryRepository.java
+└── services
+    ├── CategoryService.java
+    └── impl
+        └── CategoryServiceImpl.java
+```
+
+Tenemos este método para revisar si ya existe una categoría con el mismo nombre
+
+```text
+boolean existsByNameIgnoreCase(String name);
+```
+
+También comprobar duplicados al actualizar
+```text
+boolean existsByNameIgnoreCaseAndIdNot(
+        String name,
+        Long id
+);
+```
+Esta consulta busca otra categoría con el mismo nombre, una categoría puede conservar su propio nombre, pero no puede adoptar el nombre de otra categoría.
+
+También el servicio implementa métodos internos para normalizar texto
+Así evitamos valores como "      " y los convierte en null
+
+### Listado de categorías
+
+Endpoint:
+```text
+GET /api/categories
+```
+
+Respuesta:
+
+![get categories](/assets/getcategories.png)
+
+### Categoría por id
+
+Endpoint:
+```text
+GET /api/categories/{i}
+```
+
+Respuesta:
+
+![get categories por id](/assets/getcategoriesid.png)
+
+### Registro de una categoría
+
+Permiso: ROLE_ADMIN
+
+Endpoint:
+```text
+GET /api/categories/{i}
+```
+
+Respuesta:
+
+![post de una categoría](/assets/postcategories.png)
+
+### Modificación de una categoría
+
+Permiso: ROLE_ADMIN
+
+Endpoint:
+```text
+PUT /api/categories/{id}
+```
+
+Respuesta:
+
+![put de una categoría](/assets/putcategories.png)
+
+### Eliminación de una categoría
+
+Permiso: ROLE_ADMIN
+
+Endpoint:
+```text
+DELETE /api/categories/{id}
+```
+
+Respuesta:
+
+![delete de una categoría](/assets/deletecategories.png)
+
+Eliminación lógica = false
+
+![delete false](/assets/deletecategoriesfalse.png)
+
+
+La aplicación permite consultar, crear, actualizar y desactivar categorías. También evita nombres duplicados, normaliza los valores recibidos y mantiene las fechas en UTC.
+
+La eliminación lógica garantiza la conservación de la información y evita afectar futuras relaciones con eventos académicos.
