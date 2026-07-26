@@ -11,6 +11,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.BusinessRuleException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ResourceNotFoundException;
 import ec.edu.ups.icc.proyectointegrador.roles.entities.RoleEntity;
 import ec.edu.ups.icc.proyectointegrador.roles.enums.RoleName;
 import ec.edu.ups.icc.proyectointegrador.roles.repositories.RoleRepository;
@@ -54,13 +56,13 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto findById(Long id) {
         return repository.findWithRolesById(id)
             .map(mapper::toResponseDto)
-            .orElseThrow(() -> new IllegalStateException("User not found"));
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
     }
 
     @Override
     @Transactional
     public UserResponseDto updateStatus(Long id, UpdateUserStatusDto dto) {
-        UserEntity user = repository.findWithRolesById(id).orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+        UserEntity user = repository.findWithRolesById(id).orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
         user.setStatus(dto.status());
         user.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));
         UserEntity updatedUser = repository.save(user);
@@ -73,12 +75,12 @@ public class UserServiceImpl implements UserService {
     public UserResponseDto updateRoles(Long id, UpdateUserRolesDto dto) {
 
         UserEntity user = repository.findWithRolesById(id)
-            .orElseThrow(() -> new IllegalStateException("Usuario no encontrado"));
+            .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
         List<RoleEntity> foundRoles = roleRepository.findAllByNameIn(dto.roles());
 
         if (foundRoles.size() != dto.roles().size()) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                 "Uno o varios roles no existen"
             );
         }

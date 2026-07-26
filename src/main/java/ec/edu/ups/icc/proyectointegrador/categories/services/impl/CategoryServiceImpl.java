@@ -14,6 +14,8 @@ import ec.edu.ups.icc.proyectointegrador.categories.entities.CategoryEntity;
 import ec.edu.ups.icc.proyectointegrador.categories.mappers.CategoryMapper;
 import ec.edu.ups.icc.proyectointegrador.categories.repositories.CategoryRepository;
 import ec.edu.ups.icc.proyectointegrador.categories.services.CategoryService;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ConflictException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ResourceNotFoundException;
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
@@ -44,7 +46,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponseDto findById(Long id) {
         CategoryEntity category = repository
                 .findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new IllegalStateException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         return mapper.toResponseDto(category);
     }
@@ -61,7 +63,7 @@ public class CategoryServiceImpl implements CategoryService {
         );
 
         if (repository.existsByNameIgnoreCase(normalizedName)) {
-            throw new IllegalStateException("Ya existe una categoría con ese nombre");
+            throw new ConflictException("Ya existe una categoría con ese nombre");
         }
 
         CategoryEntity category = mapper.toEntity(dto);
@@ -84,7 +86,7 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryResponseDto update(Long id, UpdateCategoryDto dto) {
         CategoryEntity category = repository
                 .findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new IllegalStateException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         String normalizedName = normalizeRequiredText(
                 dto.name()
@@ -97,7 +99,7 @@ public class CategoryServiceImpl implements CategoryService {
         boolean duplicatedName = repository.existsByNameIgnoreCaseAndIdNot(normalizedName, id);
 
         if (duplicatedName) {
-            throw new IllegalStateException("Ya existe una categoría con ese nombre");
+            throw new ConflictException("Ya existe una categoría con ese nombre");
         }
 
         mapper.updateEntity(category, dto);
@@ -116,7 +118,7 @@ public class CategoryServiceImpl implements CategoryService {
     public void delete(Long id) {
         CategoryEntity category = repository
                 .findByIdAndActiveTrue(id)
-                .orElseThrow(() -> new IllegalStateException("Categoría no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         category.setActive(false);
         category.setUpdatedAt(OffsetDateTime.now(ZoneOffset.UTC));

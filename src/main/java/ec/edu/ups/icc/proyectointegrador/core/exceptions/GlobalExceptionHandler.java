@@ -81,6 +81,48 @@ public class GlobalExceptionHandler {
                 "El recurso solicitado no existe.", request, null);
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+        public ResponseEntity<ErrorResponseDto> handleResourceNotFound(
+                ResourceNotFoundException ex,
+                HttpServletRequest request
+        ) {
+        return build(
+            HttpStatus.NOT_FOUND,
+            "RESOURCE_NOT_FOUND",
+            ex.getMessage(),
+            request,
+            null
+        );
+        }
+
+        @ExceptionHandler(ConflictException.class)
+        public ResponseEntity<ErrorResponseDto> handleConflict(
+                ConflictException ex,
+               HttpServletRequest request
+        ) {
+            return build(
+                    HttpStatus.CONFLICT,
+                    "CONFLICT",
+                    ex.getMessage(),
+                    request,
+                    null
+        );
+        }
+
+        @ExceptionHandler(BusinessRuleException.class)
+        public ResponseEntity<ErrorResponseDto> handleBusinessRule(
+                BusinessRuleException ex,
+                HttpServletRequest request
+        ) {
+        return build(
+            HttpStatus.CONFLICT,
+        "BUSINESS_RULE_VIOLATION",
+                ex.getMessage(),
+            request,
+            null
+                );
+        }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponseDto> handleUnexpected(
             Exception ex, HttpServletRequest request) {
@@ -99,4 +141,33 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(status).body(body);
     }
+
+
+        @ExceptionHandler(IllegalArgumentException.class)
+        public ResponseEntity<ErrorResponseDto> handleIllegalArgument(
+        IllegalArgumentException ex,
+        HttpServletRequest request
+        ) {
+        return build(
+            HttpStatus.BAD_REQUEST,
+            "INVALID_ARGUMENT",
+            ex.getMessage(),
+            request,
+            null
+        );
+        }
+
+        @ExceptionHandler(InternalServerException.class)
+        public ResponseEntity<ErrorResponseDto> handleInternalServer(
+        InternalServerException ex,
+        HttpServletRequest request
+        ) {
+        return build(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "INTERNAL_ERROR",
+            "Ocurrió un error interno al procesar la solicitud.",
+            request,
+            null
+        );
+        }
 }

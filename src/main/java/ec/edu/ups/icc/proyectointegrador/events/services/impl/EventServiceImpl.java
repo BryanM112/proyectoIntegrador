@@ -7,12 +7,16 @@ import java.util.Locale;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import ec.edu.ups.icc.proyectointegrador.categories.entities.CategoryEntity;
 import ec.edu.ups.icc.proyectointegrador.categories.repositories.CategoryRepository;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.BusinessRuleException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ConflictException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ResourceNotFoundException;
 import ec.edu.ups.icc.proyectointegrador.events.dtos.CreateEventDto;
 import ec.edu.ups.icc.proyectointegrador.events.dtos.EventResponseDto;
 import ec.edu.ups.icc.proyectointegrador.events.dtos.UpdateEventDto;
@@ -103,7 +107,7 @@ public EventResponseDto findById(
     EventEntity event = eventRepository
             .findByIdAndDeletedFalse(id)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Evento no encontrado"
                     )
             );
@@ -126,13 +130,13 @@ public EventResponseDto findById(
 
         UserEntity organizer = userRepository
                 .findWithRolesByEmail(normalizedEmail)
-                .orElseThrow(() -> new IllegalStateException("Usuario autenticado no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario autenticado no encontrado"));
 
         if (organizer.getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException("El usuario organizador no está activo");
+            throw new BusinessRuleException("El usuario organizador no está activo");
         }
 
-        CategoryEntity category = categoryRepository.findByIdAndActiveTrue(dto.categoryId()).orElseThrow(() -> new IllegalStateException("Categoría no encontrada"));
+        CategoryEntity category = categoryRepository.findByIdAndActiveTrue(dto.categoryId()).orElseThrow(() -> new ResourceNotFoundException("Categoría no encontrada"));
 
         validateEventDates(dto.registrationStartAt(),dto.registrationEndAt(),dto.startAt(),dto.endAt());
 
@@ -177,19 +181,19 @@ public EventResponseDto findById(
             OffsetDateTime endAt
     ) {
         if (!registrationStartAt.isBefore(registrationEndAt)) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "El inicio de inscripciones debe ser anterior al fin de inscripciones"
             );
         }
 
         if (registrationEndAt.isAfter(startAt)) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "Las inscripciones deben finalizar antes o al iniciar el evento"
             );
         }
 
         if (!startAt.isBefore(endAt)) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "El inicio del evento debe ser anterior a su finalización"
             );
         }
@@ -203,13 +207,13 @@ public EventResponseDto findById(
         switch (modality) {
             case PRESENTIAL -> {
                 if (location == null) {
-                    throw new IllegalStateException(
+                    throw new BusinessRuleException(
                             "La ubicación es obligatoria para un evento presencial"
                     );
                 }
 
                 if (virtualUrl != null) {
-                    throw new IllegalStateException(
+                    throw new BusinessRuleException(
                             "Un evento presencial no debe incluir una URL virtual"
                     );
                 }
@@ -217,13 +221,13 @@ public EventResponseDto findById(
 
             case VIRTUAL -> {
                 if (virtualUrl == null) {
-                    throw new IllegalStateException(
+                    throw new BusinessRuleException(
                             "La URL virtual es obligatoria para un evento virtual"
                     );
                 }
 
                 if (location != null) {
-                    throw new IllegalStateException(
+                    throw new BusinessRuleException(
                             "Un evento virtual no debe incluir una ubicación física"
                     );
                 }
@@ -231,13 +235,13 @@ public EventResponseDto findById(
 
             case HYBRID -> {
                 if (location == null) {
-                    throw new IllegalStateException(
+                    throw new BusinessRuleException(
                             "La ubicación es obligatoria para un evento híbrido"
                     );
                 }
 
                 if (virtualUrl == null) {
-                    throw new IllegalStateException(
+                    throw new BusinessRuleException(
                             "La URL virtual es obligatoria para un evento híbrido"
                     );
                 }
@@ -252,7 +256,7 @@ public EventResponseDto findById(
         if (startFrom != null
                 && startTo != null
                 && startFrom.isAfter(startTo)) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                     "La fecha inicial del filtro no puede ser posterior a la fecha final"
             );
         }
@@ -280,7 +284,7 @@ public EventResponseDto findById(
         EventEntity event = eventRepository
             .findByIdAndDeletedFalse(id)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Evento no encontrado"
                     )
             );
@@ -290,7 +294,7 @@ public EventResponseDto findById(
         UserEntity authenticatedUser = userRepository
             .findWithRolesByEmail(normalizedEmail)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Usuario autenticado no encontrado"
                     )
             );
@@ -302,7 +306,7 @@ public EventResponseDto findById(
         CategoryEntity category = categoryRepository
                 .findByIdAndActiveTrue(dto.categoryId())
                 .orElseThrow(() ->
-                        new IllegalStateException(
+                        new ResourceNotFoundException(
                                 "Categoría no encontrada"
                         )
                 );
@@ -337,7 +341,7 @@ public EventResponseDto findById(
             - event.getAvailableCapacity();
 
         if (dto.capacity() < registeredParticipants) {
-            throw new IllegalStateException(
+            throw new BusinessRuleException(
                 "La capacidad no puede ser menor que el número de participantes inscritos"
             );
         }
@@ -377,7 +381,7 @@ public EventResponseDto findById(
             .equals(authenticatedUser.getId());
 
         if (!isAdmin && !isOwner) {
-        throw new IllegalStateException(
+        throw new AccessDeniedException(
                 "No tiene permisos para modificar este evento"
             );
         }
@@ -389,7 +393,7 @@ public EventResponseDto findById(
         Long requestedVersion
     ) {
         if (!event.getVersion().equals(requestedVersion)) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                 "El evento fue modificado por otra operación. Actualice la información e inténtelo nuevamente"
             );
         }
@@ -401,7 +405,7 @@ public EventResponseDto findById(
         EventEntity event = eventRepository
             .findByIdAndDeletedFalse(id)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Evento no encontrado"
                     )
             );
@@ -413,7 +417,7 @@ public EventResponseDto findById(
         UserEntity authenticatedUser = userRepository
             .findWithRolesByEmail(normalizedEmail)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Usuario autenticado no encontrado"
                     )
             );
@@ -437,7 +441,7 @@ public EventResponseDto findById(
             EventEntity event = eventRepository
             .findByIdAndDeletedFalse(id)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Evento no encontrado"
                     )
             );
@@ -449,7 +453,7 @@ public EventResponseDto findById(
     UserEntity authenticatedUser = userRepository
             .findWithRolesByEmail(normalizedEmail)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Usuario autenticado no encontrado"
                     )
             );
@@ -492,7 +496,7 @@ public EventResponseDto findById(
     EventStatus currentStatus = event.getStatus();
 
     if (currentStatus == requestedStatus) {
-        throw new IllegalStateException(
+        throw new ConflictException(
                 "El evento ya tiene el estado solicitado"
         );
     }
@@ -510,11 +514,11 @@ public EventResponseDto findById(
                 now
         );
 
-        case FINISHED -> throw new IllegalStateException(
+        case FINISHED -> throw new BusinessRuleException(
                 "Un evento finalizado no puede cambiar de estado"
         );
 
-        case CANCELLED -> throw new IllegalStateException(
+        case CANCELLED -> throw new BusinessRuleException(
                 "Un evento cancelado no puede cambiar de estado"
         );
     }
@@ -538,7 +542,7 @@ public EventResponseDto findById(
             // Transición permitida.
         }
 
-        default -> throw new IllegalStateException(
+        default -> throw new BusinessRuleException(
                 "Un evento en borrador solo puede publicarse o cancelarse"
         );
     }
@@ -555,7 +559,7 @@ private void validatePublishedTransition(
     switch (requestedStatus) {
         case FINISHED -> {
             if (now.isBefore(event.getEndAt())) {
-                throw new IllegalStateException(
+                throw new BusinessRuleException(
                         "El evento no puede finalizar antes de su fecha de finalización"
                 );
             }
@@ -565,7 +569,7 @@ private void validatePublishedTransition(
             // Transición permitida.
         }
 
-        default -> throw new IllegalStateException(
+        default -> throw new BusinessRuleException(
                 "Un evento publicado solo puede finalizarse o cancelarse"
         );
     }
@@ -578,13 +582,13 @@ private void validateEventCanBePublished(
         OffsetDateTime now
 ) {
     if (!event.getStartAt().isAfter(now)) {
-        throw new IllegalStateException(
+        throw new BusinessRuleException(
                 "No se puede publicar un evento que ya comenzó"
         );
     }
 
     if (!event.getRegistrationEndAt().isAfter(now)) {
-        throw new IllegalStateException(
+        throw new BusinessRuleException(
                 "No se puede publicar un evento cuyo periodo de inscripciones finalizó"
         );
     }
@@ -592,13 +596,13 @@ private void validateEventCanBePublished(
     if (!Boolean.TRUE.equals(
             event.getCategory().getActive()
     )) {
-        throw new IllegalStateException(
+        throw new BusinessRuleException(
                 "No se puede publicar un evento con una categoría inactiva"
         );
     }
 
     if (event.getCapacity() <= 0) {
-        throw new IllegalStateException(
+        throw new BusinessRuleException(
                 "El evento debe tener una capacidad válida"
             );
         }
@@ -614,7 +618,7 @@ private void validateEventCanBePublished(
         return userRepository
             .findWithRolesByEmail(normalizedEmail)
             .orElseThrow(() ->
-                    new IllegalStateException(
+                    new ResourceNotFoundException(
                             "Usuario autenticado no encontrado"
                     )
             );
@@ -667,7 +671,7 @@ private void validateEventCanBePublished(
             return;
         }
 
-        throw new IllegalStateException(
+        throw new ResourceNotFoundException(
             "Evento no encontrado"
         );
     }

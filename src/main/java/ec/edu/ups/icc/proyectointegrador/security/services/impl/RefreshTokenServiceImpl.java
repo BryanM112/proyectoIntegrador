@@ -10,11 +10,14 @@ import java.util.Base64;
 import java.util.HexFormat;
 import java.util.UUID;
 
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.InvalidRefreshTokenException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import ec.edu.ups.icc.proyectointegrador.security.config.JwtProperties;
 import ec.edu.ups.icc.proyectointegrador.security.dtos.CreatedRefreshTokenDto;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.InternalServerException;
 import ec.edu.ups.icc.proyectointegrador.security.dtos.RotatedRefreshTokenDto;
 import ec.edu.ups.icc.proyectointegrador.security.entities.RefreshTokenEntity;
 import ec.edu.ups.icc.proyectointegrador.security.repositories.RefreshTokenRepository;
@@ -85,7 +88,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         RefreshTokenEntity token = repository
                 .findByTokenHash(tokenHash)
                 .orElseThrow(() ->
-                        new IllegalStateException(
+                        new InvalidRefreshTokenException(
                                 "Refresh token inválido"
                         )
                 );
@@ -94,19 +97,19 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
                 OffsetDateTime.now(ZoneOffset.UTC);
 
         if (token.getRevokedAt() != null) {
-            throw new IllegalStateException(
+            throw new InvalidRefreshTokenException(
                     "Refresh token revocado"
             );
         }
 
         if (!token.getExpiresAt().isAfter(now)) {
-            throw new IllegalStateException(
+            throw new InvalidRefreshTokenException(
                     "Refresh token expirado"
             );
         }
 
         if (token.getUser().getStatus() != UserStatus.ACTIVE) {
-            throw new IllegalStateException(
+            throw new InvalidRefreshTokenException(
                     "Usuario no disponible"
             );
         }
@@ -134,7 +137,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
             return HexFormat.of().formatHex(hashBytes);
 
         } catch (NoSuchAlgorithmException exception) {
-            throw new IllegalStateException(
+            throw new InternalServerException(
                     "No se pudo procesar el refresh token",
                     exception
             );
@@ -192,7 +195,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         String tokenHash = hash(rawToken);
 
         RefreshTokenEntity token = repository.findByTokenHash(tokenHash)
-            .orElseThrow(() -> new IllegalStateException(
+            .orElseThrow(() -> new InvalidRefreshTokenException(
                             "Refresh token inválido"));
 
         if (token.getRevokedAt() != null) {

@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Locale;
 
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.BusinessRuleException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ConflictException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ResourceNotFoundException;
 import ec.edu.ups.icc.proyectointegrador.roles.entities.RoleEntity;
 import ec.edu.ups.icc.proyectointegrador.roles.enums.RoleName;
 import ec.edu.ups.icc.proyectointegrador.roles.repositories.RoleRepository;
@@ -83,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
         UserEntity user = userRepository
                 .findWithRolesByEmail(normalizedEmail)
                 .orElseThrow(() ->
-                        new IllegalStateException(
+                        new BadCredentialsException(
                                 "Credenciales inválidas"
                         )
                 );
@@ -113,15 +117,15 @@ public class AuthServiceImpl implements AuthService {
                 .toLowerCase(Locale.ROOT);
 
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new IllegalStateException(
-                    "No se pudo registrar el usuario"
+            throw new ConflictException(
+                    "Ya existe un usuario registrado con ese correo"
             );
         }
 
         RoleEntity participantRole = roleRepository
                 .findByName(RoleName.PARTICIPANT)
                 .orElseThrow(() ->
-                        new IllegalStateException(
+                        new BusinessRuleException(
                                 "El rol PARTICIPANT no está configurado"
                         )
                 );
@@ -160,7 +164,7 @@ public class AuthServiceImpl implements AuthService {
                 .findWithRolesByEmail(normalizedEmail)
                 .map(userMapper::toResponseDto)
                 .orElseThrow(() ->
-                        new IllegalStateException(
+                        new ResourceNotFoundException(
                                 "Usuario autenticado no encontrado"
                         )
                 );

@@ -15,6 +15,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
 
+import ec.edu.ups.icc.proyectointegrador.security.filters.JwtAccessDeniedHandler;
+import ec.edu.ups.icc.proyectointegrador.security.filters.JwtAuthenticationEntryPoint;
 import ec.edu.ups.icc.proyectointegrador.security.filters.JwtAuthenticationFilter;
 import ec.edu.ups.icc.proyectointegrador.security.ratelimit.RateLimitFilter;
 import ec.edu.ups.icc.proyectointegrador.security.services.CustomUserDetailsService;
@@ -65,10 +67,12 @@ public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(
-            HttpSecurity http,
-            JwtAuthenticationFilter jwtAuthenticationFilter,
-            RateLimitFilter rateLimitFilter,
-            CorsConfigurationSource corsConfigurationSource
+        HttpSecurity http,
+        JwtAuthenticationFilter jwtAuthenticationFilter,
+        RateLimitFilter rateLimitFilter,
+        CorsConfigurationSource corsConfigurationSource,
+        JwtAuthenticationEntryPoint authenticationEntryPoint,
+        JwtAccessDeniedHandler accessDeniedHandler
     ) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
@@ -77,6 +81,10 @@ public class SecurityConfig {
 
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .exceptionHandling(exception -> exception
+                    .authenticationEntryPoint(authenticationEntryPoint)
+                    .accessDeniedHandler(accessDeniedHandler)
                 )
 
                 .authorizeHttpRequests(auth -> auth

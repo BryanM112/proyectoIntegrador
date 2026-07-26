@@ -1016,3 +1016,93 @@ Actuator expone únicamente `/actuator/health`, sin detalles internos, accesible
 Se probó accediendo a `/swagger-ui/index.html` con Basic Auth: el servidor respondió correctamente con el documento HTML de Swagger UI, confirmando que la protección y la documentación funcionan.
 
 ![Swagger UI accedido con Basic Auth desde PowerShell](/assets/swagger-powershell.png)
+
+## Manejo centralizado de errores completo
+
+Se complemento en el sistema agregando excepciones personailizadas. Es decir, se crearon excepciones específicas para evitar el uso general de IllegalStateException y diferenciar correctamente cada tipo de error.
+
+```text
+ResourceNotFoundException: Se utiliza cuando un recurso no existe
+
+404 Not Found
+RESOURCE_NOT_FOUND
+```
+
+```text
+ConflictException: Se utiliza cuando una operación entra en un conflicto con los datos actuales
+
+409 Conflict
+CONFLICT
+```
+
+```text
+BusinessRuleException: Se utiliza cuando se incumple alguna regla de negocio
+
+409 Conflict
+BUSINESS_RULE_VIOLATION
+```
+
+```text
+InvalidRefreshTokenException Se utiliza cuando un refresh token no es válido para generar una nueva sesión
+
+401 Unauthorized
+UNAUTHENTICATED
+```
+
+```text
+InternalServerException: se utiliza para fallos internos que no se corresponden a una regla de negocio o error enviado por el usaurio
+
+500 Internal Server Error
+INTERNAL_ERROR
+
+```
+
+```text
+La validaciones como:
+@NotBlank
+@NotNull
+@Positive
+@Email
+@Size
+
+son procesadas mediante
+
+MethodArgumentNotValidException
+
+```
+
+```text
+IllegalArgumentException: Se utiliza cuando el refresh token no fue enviado
+
+
+400 Bad Request
+INVALID_ARGUMENT
+```
+
+```text
+BadCredentialsException: Cuando las credenciales son incorrectas
+
+{
+  "timestamp": "2026-07-26T12:30:00-05:00",
+  "status": 401,
+  "code": "INVALID_CREDENTIALS",
+  "message": "Credenciales inválidas.",
+  "path": "/api/auth/login",
+  "errors": null
+}
+```
+
+### Errores generados dentro de Spring Security
+
+Las excepciones generadas dentro d ela caden ade filtros de Spring Security ocurren antes de llegar a los controladores. Esa es la razón del porque GlobalExceptionHandler no puede capturar siempre estos errores.
+
+```text
+JwtAuthenticationEntryPoint: Se ejecuta cuando un usuario intenta acceder a un endpoint protegido sin autenticarse
+```
+
+```text
+JwtAccessDeniedHandler: Se ejecuta cuando el usuario está autenticado, pero no tiene el rol o permiso requerido.
+
+```
+
+El manejo global de errores permite que la API responda de forma consistente ante errores de validadción, autenticación, recursos inexistentes, conflictos y reglas de negocio
