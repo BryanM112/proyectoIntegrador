@@ -616,3 +616,320 @@ Eliminación lógica = false
 La aplicación permite consultar, crear, actualizar y desactivar categorías. También evita nombres duplicados, normaliza los valores recibidos y mantiene las fechas en UTC.
 
 La eliminación lógica garantiza la conservación de la información y evita afectar futuras relaciones con eventos académicos.
+
+### Gestión de eventos académicos
+
+Este módulo de eventos es uno de los componenetes principales del sistema ya que se nor permite registrar, consultar y administrar eventos académicos disponibles para los usuarios
+
+Cada evento contiene una información con
+
+```text
+título y descripción;
+modalidad;
+ubicación física o enlace virtual;
+capacidad total y capacidad disponible;
+periodo de inscripciones;
+fecha de inicio y finalización;
+estado;
+organizador responsable;
+categoría;
+eliminación lógica;
+versión para control de concurrencia.
+```
+
+También se implementó autorización basada en roles y propiedad del recurso. Un administrador puede gestionar cualquier evento, mientras que un organizador solamente puede modificar los eventos que le pertenecen.
+
+Estructura del módulo:
+```text
+events
+├── controllers
+│   └── EventController.java
+├── dtos
+│   ├── CreateEventDto.java
+│   ├── EventResponseDto.java
+│   ├── UpdateEventDto.java
+│   └── UpdateEventStatusDto.java
+├── entities
+│   └── EventEntity.java
+├── enums
+│   ├── EventModality.java
+│   └── EventStatus.java
+├── mappers
+│   └── EventMapper.java
+├── repositories
+│   └── EventRepository.java
+├── services
+│   ├── EventService.java
+│   └── impl
+│       └── EventServiceImpl.java
+└── specifications
+    └── EventSpecifications.java
+```
+
+### Restricciones de la base de datos
+
+La base de datos protege varias reglas
+
+como la capacidad positiva capacity > 0
+
+La capacidad disponible debe cumplir 0 <= available_capacity <= capacity
+
+Las fechas:
+
+registrationStartAt < registrationEndAt
+registrationEndAt <= startAt
+startAt < endAt
+
+Modalidades:
+
+PRESENTIAL → necesita ubicación y no admite URL virtual
+VIRTUAL    → necesita URL virtual y no admite ubicación física
+HYBRID     → necesita ubicación y URL virtual
+
+Estas reglas se validan tanto en Java como en PostgreSQL.
+
+### Ciclo de vida de los estados
+
+Las transacciones deben: 
+```text
+DRAFT → PUBLISHED
+DRAFT → CANCELLED
+
+PUBLISHED → FINISHED
+PUBLISHED → CANCELLED
+```
+
+No se debe, ni se puede:
+```text
+FINISHED → PUBLISHED
+FINISHED → DRAFT
+CANCELLED → PUBLISHED
+CANCELLED → DRAFT
+```
+
+### Condiciones para publicar un evento
+
+Para pasar a: DRAFT → PUBLISHED
+
+Debemos comprobar:
+
+```text
+el evento todavía no haya comenzado;
+el periodo de inscripciones no haya finalizado;
+la categoría siga activa;
+la capacidad sea mayor que cero.
+```
+
+### Finalización del evento
+
+Un evento publicado puede cambiar a Finished cuando su fecha de finalización ya haya llegado.
+
+### Relaciones
+
+Relación con el organizador
+
+```text
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(
+        name = "organizer_id",
+        nullable = false
+)
+private UserEntity organizer;
+```
+
+Cada evento pertenece a un usuario organizador
+
+Relación con categoría
+```text
+@ManyToOne(fetch = FetchType.LAZY, optional = false)
+@JoinColumn(
+        name = "category_id",
+        nullable = false
+)
+private CategoryEntity category;
+```
+
+Cada evento debe estar asociado con una categoría activa
+
+Aquí también se elimina lógicamente.
+
+
+### Filtros creados
+
+
+Modalidad
+
+```text
+GET /api/events?modality=VIRTUAL
+```
+
+Categoría
+
+```text
+GET /api/events?categoryId=2
+```
+
+Organizador
+
+```text
+GET /api/events?organizerId=2
+```
+
+Intervalo de fechas
+
+```text
+GET /api/events?organizerId=2
+```
+
+### Actualización de capacidad
+
+La capacidad disponible no puede reemplazarse directamente con la capacidad total.
+
+Primero se calcula cuántas personas ya están inscritas:
+```text
+int registeredParticipants =
+        event.getCapacity()
+        - event.getAvailableCapacity();
+```
+
+Después se valida la nueva capacidad:
+
+```text
+if (dto.capacity() < registeredParticipants) {
+    throw new IllegalStateException(
+            "La capacidad no puede ser menor que el número de participantes inscritos"
+    );
+}
+```
+
+Finalmente:
+
+```text
+int newAvailableCapacity =
+        dto.capacity() - registeredParticipants;
+```
+
+Ejemplo: 
+```text
+Capacidad actual: 100
+Disponibles: 70
+Inscritos: 30
+Nueva capacidad: 120
+Nuevos disponibles: 90
+```
+
+### Actualización del evento
+
+El endpoint actualiza:
+
+```text
+título;
+descripción;
+modalidad;
+ubicación;
+URL virtual;
+capacidad;
+fechas;
+categoría;
+fecha de modificación.
+```
+
+Pero conserva:
+
+```text
+identificador;
+organizador;
+estado;
+fecha de creación;
+indicador de eliminación.
+```
+
+### Cambio de estado
+
+El cambio de estado utiliza un endpoint independiente:
+
+```text
+PATCH /api/events/{id}/status
+```
+
+Ejemplo:
+```text
+{
+  "status": "PUBLISHED",
+  "version": 0
+}
+```
+
+### Visibilidad según el rol
+
+El listado y la consulta individual aplican diferentes reglas.
+
+#### Administrador
+
+Puede consultar todos los eventos que no estén eliminados: DRAFT, PUBLISHED, FINISHED, CANCELLED
+
+#### Organizador
+
+Puede consultar: todos los eventos publicados, sus propios eventos en borrador, sus propios eventos cancelados, sus propios eventos finalizados.
+
+#### Participante
+
+Solo puede consultar: PUBLISHED
+
+### Ocultamiento de recursos
+
+Cuando un usuario intenta consultar un evento que existe, pero no tiene permiso para verlo, el sistema utiliza provisionalmente:
+```text
+Evento no encontrado
+```
+
+en lugar de revelar:
+
+```text
+No tiene permisos para ver este evento
+```
+
+Esto evita que un usuario descubra la existencia de borradores privados probando diferentes identificadores.
+
+### Ejemplo de consulta paginada
+
+```text
+GET /api/events?page=0&size=5&sort=startAt,asc
+Authorization: Bearer ACCESS_TOKEN
+```
+
+La respuesta contiene una página con los eventos visibles para el usuario.
+
+La estructura puede incluir:
+
+```text
+{
+  "content": [
+    {
+      "id": 4,
+      "title": "Evento académico",
+      "status": "PUBLISHED",
+      "modality": "VIRTUAL",
+      "organizerId": 2,
+      "categoryId": 1,
+      "version": 1
+    }
+  ],
+  "page": {
+    "size": 5,
+    "number": 0,
+    "totalElements": 1,
+    "totalPages": 1
+  }
+}
+```
+
+La implementación permitió construir un módulo completo para administrar eventos académicos.
+
+El sistema permite crear, consultar, actualizar, publicar, cancelar, finalizar y eliminar lógicamente eventos, manteniendo la integridad de las fechas, modalidades, capacidades y relaciones.
+
+Los filtros dinámicos permiten encontrar eventos mediante diferentes criterios sin crear un endpoint independiente para cada combinación.
+
+La autorización protege las operaciones administrativas y garantiza que los organizadores solo puedan modificar sus propios recursos.
+
+El control de concurrencia mediante @Version evita sobrescribir cambios realizados por otros usuarios.
