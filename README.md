@@ -1106,3 +1106,67 @@ JwtAccessDeniedHandler: Se ejecuta cuando el usuario está autenticado, pero no 
 ```
 
 El manejo global de errores permite que la API responda de forma consistente ante errores de validadción, autenticación, recursos inexistentes, conflictos y reglas de negocio
+
+## Módulo de Sesiones
+
+Se implementaron las sesiones. Que están asociadas a un evento y debe respetar tanto el horario general del evento como las reglas de solapamiento.
+
+### 
+
+Reglas de negocio
+
+La fecha de inicio debe ser anterior a la fecha de finalización
+es decir. startAt < endAt
+
+La sesión debe estar completamente contenida dentro del horario del evento. 
+
+No se permite crear, ni actualizar una sesión que coincide con otra sesión del mismo evento. Además no se puede repetir dentro del mismo evento la sesión. Solo se puede crear o modificar o eliminar sesiones si se tiene rol de Admiin o si es organizador, dueño del evento.
+
+Sin embargo, si se puede consultar las sesiones. Los administradores, propietarios o usuarios autenticados mientras el evento sea publico.
+
+Es un CRUD sencillo así que los endpoints son los mismos.
+
+```text
+GET	/api/sessions/event/{eventId}
+GET /api/sessions/{id}
+POST	/api/sessions	Crea una sesión
+PUT	/api/sessions/{id}	Actualiza una sesión
+DELETE	/api/sessions/{id}
+```
+
+### Casos de error probados
+
+Sesión inexistente
+```text
+404 Not Found
+RESOURCE_NOT_FOUND
+```
+
+Sesión duplicada
+```text
+409 Conflict
+CONFLICT
+```
+
+Sesión solapada
+```text
+409 Conflict
+CONFLICT
+Mensaje: La sesión se superpone con otra sesión del evento 
+```
+
+Sesión fuera del horario del evento
+```text
+409 Conflict
+BUSINESS_RULE_VIOLATION
+Mensaje:
+La sesión debe desarrollarse dentro del horario del evento
+```
+
+Usuario sin permisos
+```text
+403 Forbidden
+ACCESS_DENIED
+```
+
+
