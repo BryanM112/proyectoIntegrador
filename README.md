@@ -968,3 +968,38 @@ También se restringió CORS mediante `core/config/CorsConfig.java`, permitiendo
 Se probó enviando 6 solicitudes seguidas de login: las primeras 5 respondieron `200 OK`, y la sexta respondió `429 Too Many Requests`.
 
 ![Rate limiting probado con PowerShell](/assets/ratelimit-powershell.png)
+
+
+## Manejo Centralizado de Excepciones
+
+Se implementó `GlobalExceptionHandler` (`@RestControllerAdvice`) para capturar y transformar excepciones en respuestas JSON uniformes, evitando exponer errores 500 sin control.
+
+Estructura de la respuesta de error:
+
+```json
+{
+  "timestamp": "...",
+  "status": 401,
+  "code": "INVALID_CREDENTIALS",
+  "message": "Credenciales inválidas.",
+  "path": "/api/auth/login",
+  "errors": null
+}
+```
+
+Casos manejados:
+
+| Excepción | Status | Código |
+|---|---|---|
+| `MethodArgumentNotValidException` | 400 | `VALIDATION_ERROR` (incluye errores por campo) |
+| `BadCredentialsException` | 401 | `INVALID_CREDENTIALS` |
+| `AuthenticationException` | 401 | `UNAUTHENTICATED` |
+| `AccessDeniedException` | 403 | `ACCESS_DENIED` |
+| `DataIntegrityViolationException` | 409 | `DATA_CONFLICT` |
+| `IllegalStateException` | 409 | `BUSINESS_RULE_VIOLATION` |
+| `NoSuchElementException` | 404 | `RESOURCE_NOT_FOUND` |
+| Cualquier otra excepción | 500 | `INTERNAL_ERROR` |
+
+Se probó enviando credenciales inválidas a `/auth/login`: la API respondió `401` con `code: "INVALID_CREDENTIALS"` en lugar de un error 500 sin controlar.
+
+![Manejo de excepciones probado con PowerShell](/assets/exceptions-powershell.png)
