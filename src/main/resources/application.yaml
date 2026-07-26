@@ -51,3 +51,7 @@ management:
   endpoint:
     health:
       show-details: never
+
+swagger:
+  username: ${SWAGGER_USERNAME}
+  password: ${SWAGGER_PASSWORD}

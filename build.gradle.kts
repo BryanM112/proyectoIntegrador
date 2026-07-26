@@ -28,6 +28,7 @@ dependencies {
 	implementation("org.flywaydb:flyway-database-postgresql")
 	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	runtimeOnly("org.postgresql:postgresql")
 	testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")

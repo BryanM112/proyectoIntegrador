@@ -1003,3 +1003,16 @@ Casos manejados:
 Se probó enviando credenciales inválidas a `/auth/login`: la API respondió `401` con `code: "INVALID_CREDENTIALS"` en lugar de un error 500 sin controlar.
 
 ![Manejo de excepciones probado con PowerShell](/assets/exceptions-powershell.png)
+
+
+## Swagger Protegido, Actuator y Observabilidad
+
+Se integró Swagger UI mediante `springdoc-openapi`, protegido con autenticación HTTP Basic independiente del JWT usado por el resto de la API (`SwaggerSecurityConfig`), con credenciales configurables por variables de entorno (`SWAGGER_USERNAME`, `SWAGGER_PASSWORD`).
+
+Se configuró `OpenApiConfig` con el esquema de seguridad Bearer JWT, permitiendo probar endpoints protegidos directamente desde Swagger UI.
+
+Actuator expone únicamente `/actuator/health`, sin detalles internos, accesible sin autenticación.
+
+Se probó accediendo a `/swagger-ui/index.html` con Basic Auth: el servidor respondió correctamente con el documento HTML de Swagger UI, confirmando que la protección y la documentación funcionan.
+
+![Swagger UI accedido con Basic Auth desde PowerShell](/assets/swagger-powershell.png)
