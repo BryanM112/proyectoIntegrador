@@ -40,6 +40,8 @@ security:
     secret: ${JWT_SECRET}
     access-expiration: ${JWT_ACCESS_EXPIRATION:15m}
     refresh-expiration: ${JWT_REFRESH_EXPIRATION:7d}
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS}
 
 management:
   endpoints:

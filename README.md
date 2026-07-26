@@ -933,3 +933,38 @@ Los filtros dinámicos permiten encontrar eventos mediante diferentes criterios 
 La autorización protege las operaciones administrativas y garantiza que los organizadores solo puedan modificar sus propios recursos.
 
 El control de concurrencia mediante @Version evita sobrescribir cambios realizados por otros usuarios.
+
+## Redis, Rate Limiting y CORS
+
+Se implementó rate limiting distribuido usando Redis, con contadores atómicos asociados a IP, usuario autenticado o combinación IP+correo, según el tipo de endpoint:
+
+| Endpoint | Clave | Límite |
+|---|---|---|
+| `POST /auth/login` | IP + correo | 5 solicitudes/minuto |
+| `POST /auth/register` | IP | 3 solicitudes/hora |
+| Endpoints públicos | IP | 60 solicitudes/minuto |
+| Endpoints autenticados | Usuario autenticado | 120 solicitudes/minuto |
+| Generación de reportes | Usuario autenticado | 5 solicitudes/minuto |
+
+Al superar el límite, la API responde `429 Too Many Requests` con el encabezado `Retry-After`, indicando en segundos cuándo puede volver a intentarse.
+
+Adicionalmente, se implementó bloqueo temporal tras varios intentos fallidos de login (5 intentos en 15 minutos), bloqueando tanto la IP como el correo involucrados durante 15 minutos, usando claves con prefijo `blocked-user:` y `blocked-ip:`.
+
+Todas las claves temporales en Redis tienen TTL definido, sin usarse como almacenamiento permanente.
+
+La estructura es la siguiente:
+
+```text
+src/main/java/ec/edu/ups/icc/proyectointegrador/security/ratelimit
+├── CachedBodyHttpServletRequest.java
+├── LoginAttemptService.java
+├── RateLimitFilter.java
+├── RateLimiterService.java
+└── RateLimitResult.java
+```
+
+También se restringió CORS mediante `core/config/CorsConfig.java`, permitiendo únicamente los orígenes definidos en la variable de entorno `ALLOWED_ORIGINS`, los métodos `GET, POST, PUT, PATCH, DELETE, OPTIONS`, y los headers `Authorization` y `Content-Type`, sin usar `*` ni habilitar credenciales.
+
+Se probó enviando 6 solicitudes seguidas de login: las primeras 5 respondieron `200 OK`, y la sexta respondió `429 Too Many Requests`.
+
+![Rate limiting probado con PowerShell](/assets/ratelimit-powershell.png)
