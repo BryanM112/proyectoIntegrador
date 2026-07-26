@@ -14,6 +14,7 @@ import ec.edu.ups.icc.proyectointegrador.security.dtos.LoginRequestDto;
 import ec.edu.ups.icc.proyectointegrador.security.dtos.RegisterRequestDto;
 import ec.edu.ups.icc.proyectointegrador.security.services.AuthService;
 import ec.edu.ups.icc.proyectointegrador.users.dtos.UserResponseDto;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import jakarta.validation.Valid;
 import java.security.Principal;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,6 +30,7 @@ public class AuthController {
         this.service = service;
     }
 
+    @SecurityRequirements
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(
             @Valid @RequestBody LoginRequestDto request, HttpServletRequest httpRequest
@@ -39,6 +41,7 @@ public class AuthController {
             return ResponseEntity.ok(service.login(request, clientIp));
     }
 
+    @SecurityRequirements
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
     public UserResponseDto register(
@@ -66,6 +69,7 @@ public class AuthController {
     }
 
 
+    @SecurityRequirements
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponseDto> refresh(@Valid @RequestBody RefreshRequestDto request, HttpServletRequest httpRequest) {
         String clientIp = extractClientIp(httpRequest);
@@ -76,6 +80,7 @@ public class AuthController {
     }
 
 
+    @SecurityRequirements
     @PostMapping("/logout")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void logout(@Valid @RequestBody RefreshRequestDto request) {

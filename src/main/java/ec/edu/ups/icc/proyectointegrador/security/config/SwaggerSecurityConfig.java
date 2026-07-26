@@ -7,6 +7,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,7 +25,9 @@ public class SwaggerSecurityConfig {
     private String swaggerPassword;
 
     @Bean
-    public InMemoryUserDetailsManager swaggerUserDetailsService(PasswordEncoder passwordEncoder) {
+    public InMemoryUserDetailsManager swaggerUserDetailsService(
+            PasswordEncoder passwordEncoder
+    ) {
         UserDetails swaggerUser = User.builder()
                 .username(swaggerUsername)
                 .password(passwordEncoder.encode(swaggerPassword))
@@ -42,24 +45,50 @@ public class SwaggerSecurityConfig {
             PasswordEncoder passwordEncoder
     ) throws Exception {
 
-        // Se construye un AuthenticationManager EXCLUSIVO para esta cadena,
-        // para que no use el AuthenticationManager global (el que valida
-        // contra la tabla real de usuarios de la aplicación).
         AuthenticationManagerBuilder authManagerBuilder =
                 http.getSharedObject(AuthenticationManagerBuilder.class);
-        authManagerBuilder.userDetailsService(swaggerUserDetailsService).passwordEncoder(passwordEncoder);
-        AuthenticationManager swaggerAuthManager = authManagerBuilder.build();
 
-        BasicAuthenticationEntryPoint entryPoint = new BasicAuthenticationEntryPoint();
+        authManagerBuilder
+                .userDetailsService(swaggerUserDetailsService)
+                .passwordEncoder(passwordEncoder);
+
+        AuthenticationManager swaggerAuthManager =
+                authManagerBuilder.build();
+
+        BasicAuthenticationEntryPoint entryPoint =
+                new BasicAuthenticationEntryPoint();
+
         entryPoint.setRealmName("Swagger");
+        entryPoint.afterPropertiesSet();
 
-        http
-                .securityMatcher("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs", "/v3/api-docs/**")
+        return http
+                .securityMatcher(
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs",
+                        "/v3/api-docs/**"
+                )
+
+                .csrf(csrf -> csrf.disable())
+
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS
+                        )
+                )
+
                 .authenticationManager(swaggerAuthManager)
-                .authorizeHttpRequests(auth -> auth.anyRequest().hasRole("SWAGGER"))
-                .anonymous(anonymous -> anonymous.disable())
-                .httpBasic(basic -> basic.authenticationEntryPoint(entryPoint));
 
-        return http.build();
+                .authorizeHttpRequests(auth -> auth
+                        .anyRequest().hasRole("SWAGGER")
+                )
+
+                .anonymous(anonymous -> anonymous.disable())
+
+                .httpBasic(basic -> basic
+                        .authenticationEntryPoint(entryPoint)
+                )
+
+                .build();
     }
 }

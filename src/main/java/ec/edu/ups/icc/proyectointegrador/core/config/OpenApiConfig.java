@@ -18,13 +18,19 @@ public class OpenApiConfig {
     public OpenAPI openApiConfiguration() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("API REST - Gestion de Eventos Academicos")
+                        .title("API REST - Gestión de Eventos Académicos")
                         .version("1.0.0")
-                        .description("API REST segura para la gestion de usuarios, eventos academicos, sesiones e inscripciones.")
+                        .description(
+                                "API REST segura para la gestión de usuarios, "
+                                        + "eventos académicos, sesiones e inscripciones."
+                        )
                 )
-                .addSecurityItem(new SecurityRequirement().addList(SECURITY_SCHEME_NAME))
+                .addSecurityItem(
+                        new SecurityRequirement().addList(SECURITY_SCHEME_NAME)
+                )
                 .components(new Components()
-                        .addSecuritySchemes(SECURITY_SCHEME_NAME,
+                        .addSecuritySchemes(
+                                SECURITY_SCHEME_NAME,
                                 new SecurityScheme()
                                         .name(SECURITY_SCHEME_NAME)
                                         .type(SecurityScheme.Type.HTTP)
