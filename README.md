@@ -1169,4 +1169,244 @@ Usuario sin permisos
 ACCESS_DENIED
 ```
 
+## Inscripciones
+
+Este apartado nos permite que los usuarios autenticados se registren en eventos académicos publicados
+
+Cada inscripción relaciona:
+Un evento, un usuario participantes, un código público UUID, un estado, fechas de creación y actualización, control de concurrencia mediante versión.
+
+Las inscripciones pueden tener los siguientes estados:
+
+| Estado | Descripción |
+|---|---|
+| `PENDING` | La inscripción fue creada y espera revisión. |
+| `CONFIRMED` | La inscripción fue aprobada. |
+| `REJECTED` | La inscripción fue rechazada. |
+| `CANCELLED` | La inscripción fue cancelada por el participante o un administrador. |
+
+Una inscripción rechazada o cancelada no puede volver a otro estado
+
+### Reglas de negocio
+
+Para crear una inscripción se validan las siguientes condiciones:
+```text
+El usuario autenticado debe existir y estar activo.
+El evento debe existir y no estar eliminado.
+El evento debe estar en estado PUBLISHED.
+La fecha actual debe encontrarse dentro del periodo de inscripción.
+El evento debe tener cupos disponibles.
+El participante no debe tener otra inscripción en el mismo evento.
+```
+
+Cuando se crea una inscripción:
+```text
+se genera un código UUID;
+el estado inicial es PENDING;
+se disminuye en uno la capacidad disponible del evento;
+la inscripción y la actualización del cupo se guardan dentro de la misma transacción.
+```
+
+Para evitar que dos participantes ocupen simultáneamente el último cupo, se utiliza un bloqueo pesimista sobre el evento. Es decir, durante la creación o cancelación de una inscripción, la fila del evento permanece bloqueada hasta finalizar la transacción.
+
+
+### Permisos
+
+vamos con una parte primordia. Ahora los permisoso que tiene cada usuario dependiendo de su rol.
+
+#### Participante autenticado
+
+Puede:
+```text
+crear una inscripción;
+consultar sus propias inscripciones;
+consultar una inscripción propia por ID o UUID;
+cancelar una inscripción propia pendiente o confirmada.
+```
+
+#### Organizador
+
+Puede:
+```text
+listar las inscripciones de sus propios eventos;
+consultar inscripciones relacionadas con sus eventos;
+confirmar inscripciones pendientes;
+rechazar inscripciones pendientes.
+
+No puede administrar inscripciones de eventos pertenecientes a otro organizador.
+```
+
+#### Administrador
+
+Puede:
+```
+consultar cualquier inscripción;
+listar inscripciones de cualquier evento;
+confirmar o rechazar inscripciones;
+cancelar inscripciones.
+```
+
+### Endpoints
+
+#### Crear una inscripción.
+
+Endpoint
+
+```text
+POST /api/registrations
+```
+
+Cuerpo:
+```text
+{
+  "eventId": 10
+}
+```
+
+#### Listar mis inscripciones.
+
+Endpoint
+
+```text
+GET /api/registrations/me
+```
+
+#### Consultar una inscripción por ID.
+
+Endpoint
+
+```text
+GET /api/registrations/{id}
+```
+
+#### Consultar una inscripción por código UUID.
+
+Endpoint
+
+```text
+GET /api/registrations/code/{registrationCode}
+```
+
+#### Listar inscripciones de un evento.
+
+Endpoint
+
+```text
+GET /api/registrations/event/{eventId}
+```
+
+#### Actualizar el estado.
+
+Endpoint
+
+```text
+PATCH /api/registrations/{id}/status
+```
+
+Cuerpo:
+```text
+{
+  "status": "CONFIRMED",
+  "version": 0
+}
+```
+
+#### Cancelar una inscripción.
+
+Endpoint
+
+```text
+DELETE /api/registrations/{id}
+```
+
+Cuerpo:
+```text
+{
+  "version": 1
+}
+```
+### Respuesta de error
+
+#### 400 Bad Request
+Reglas de negocio inválidas.
+
+```text
+{
+  "message": "Solo es posible inscribirse en eventos publicados"
+}
+```
+
+```text
+{
+  "message": "El periodo de inscripciones ya finalizó"
+}
+```
+
+```text
+{
+  "message": "La inscripción ya está cancelada"
+}
+```
+
+#### 401 Unauthorized
+No dio un token válido
+
+#### 403 Forbidden
+El usuario está autenticado, pero no tiene el rol para ejecutar la operación.
+
+#### 404 Not Found
+El evento, usuario o inscripción no existe
+
+#### 409 Conflict
+Se utiliza para inscripciones duplicadas
+
+```text
+{
+  "message": "El participante ya tiene una inscripción en este evento"
+}
+```
+
+```text
+{
+  "message": "La inscripción fue modificada por otro usuario. Actualice la información e intente nuevamente"
+}
+```
+
+
+## Documentación Swagger
+
+Se documento la API Swagger/OpenAPI, para visualizar los enpoints disponibles.
+
+Cada endpoint incluye una descripción de su función, los permisos requeridos y respuestas HTTP que es capaz de generar. Usualmente 200, 201, 400, 401, 402, 404 y 409
+
+### Documentación capturas
+
+#### Roles
+
+![Roles Swagger](/assets/rolesSwagger.png)
+
+#### Autenticación
+
+![Autenticación Swagger](/assets/autenticacionSwagger.png)
+
+#### Usuarios
+
+![Usuarios Swagger](/assets/usuariosSwagger.png)
+
+#### Eventos
+
+![Eventos Swagger](/assets/eventosSwagger.png)
+
+#### Sesiones
+
+![Sesiones Swagger](/assets/sesionesSwagger.png)
+
+#### Inscripciones 
+
+![Inscripciones Swagger](/assets/inscripcionesSwagger.png)
+
+#### Categorias
+
+![Categorias Swagger](/assets/categoriasSwagger.png)
+
 
