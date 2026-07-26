@@ -11,7 +11,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import ec.edu.ups.icc.proyectointegrador.core.dtos.ErrorResponseDto;
 import jakarta.servlet.FilterChain;
@@ -43,12 +42,12 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     public RateLimitFilter(
             RateLimiterService rateLimiterService,
-            LoginAttemptService loginAttemptService
+            LoginAttemptService loginAttemptService,
+            ObjectMapper objectMapper
     ) {
         this.rateLimiterService = rateLimiterService;
         this.loginAttemptService = loginAttemptService;
         this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
     }
 
     @Override
@@ -61,14 +60,23 @@ public class RateLimitFilter extends OncePerRequestFilter {
         String path = request.getRequestURI();
         String ip = extractClientIp(request);
 
-        if (path.endsWith("/auth/login")) {
-            handleLogin(request, response, filterChain, ip);
-            return;
+        if ("POST".equalsIgnoreCase(request.getMethod())
+            && path.endsWith("/auth/login")) {
+        handleLogin(request, response, filterChain, ip);
+        return;
         }
 
-        if (path.endsWith("/auth/register")) {
-            applyLimit(response, filterChain, request, "rate:register:" + ip, REGISTER_LIMIT, REGISTER_WINDOW);
-            return;
+        if ("POST".equalsIgnoreCase(request.getMethod())
+            && path.endsWith("/auth/register")) {
+            applyLimit(
+                response,
+                filterChain,
+                request,
+                "rate:register:" + ip,
+                REGISTER_LIMIT,
+                REGISTER_WINDOW
+            );
+        return;
         }
 
         if (isReportsEndpoint(path)) {
@@ -109,8 +117,14 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(cachedRequest, response);
 
-        // Cualquier respuesta distinta de 200 en login se considera un intento fallido
-        if (response.getStatus() != HttpServletResponse.SC_OK) {
+        int status = response.getStatus();
+
+        if (status == HttpServletResponse.SC_OK) {
+            loginAttemptService.resetFailedAttempts(ip, email);
+        } else if (
+            status == HttpServletResponse.SC_UNAUTHORIZED
+            || status == HttpServletResponse.SC_BAD_REQUEST
+        ) {
             loginAttemptService.registerFailedAttempt(ip, email);
         }
     }
@@ -164,10 +178,6 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     private String extractClientIp(HttpServletRequest request) {
-        String forwardedFor = request.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
-        }
         return request.getRemoteAddr();
     }
 

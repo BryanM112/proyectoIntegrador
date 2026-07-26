@@ -26,14 +26,14 @@ public class LoginAttemptService {
         RateLimitResult userResult = rateLimiterService.tryConsume(
                 failedAttemptsUserKey(email), MAX_FAILED_ATTEMPTS, ATTEMPTS_WINDOW);
 
-        if (!userResult.isAllowed()) {
+        if (userResult.getCurrentCount() >= MAX_FAILED_ATTEMPTS) {
             rateLimiterService.block(blockedUserKey(email), BLOCK_DURATION);
         }
 
         RateLimitResult ipResult = rateLimiterService.tryConsume(
                 failedAttemptsIpKey(ip), MAX_FAILED_ATTEMPTS, ATTEMPTS_WINDOW);
 
-        if (!ipResult.isAllowed()) {
+        if (ipResult.getCurrentCount() >= MAX_FAILED_ATTEMPTS) {
             rateLimiterService.block(blockedIpKey(ip), BLOCK_DURATION);
         }
     }
@@ -43,6 +43,11 @@ public class LoginAttemptService {
                 rateLimiterService.getTtl(blockedUserKey(email)),
                 rateLimiterService.getTtl(blockedIpKey(ip))
         );
+    }
+
+    public void resetFailedAttempts(String ip, String email) {
+        rateLimiterService.delete(failedAttemptsUserKey(email));
+        rateLimiterService.delete(failedAttemptsIpKey(ip));
     }
 
     private String failedAttemptsUserKey(String email) { return "failed-attempts-user:" + email; }
