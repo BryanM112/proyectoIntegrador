@@ -1431,6 +1431,55 @@ Se inició sesión como usuario `ADMIN` y se creó una categoría nueva mediante
 
 El campo `previous_value` no se completa automáticamente para operaciones de actualización, ya que requeriría cargar el estado anterior del recurso antes de cada operación de forma genérica para cualquier entidad del sistema. Actualmente solo se registra `new_value` (el cuerpo de la petición). Esto podría extenderse en una siguiente iteración agregando una anotación personalizada (`@Audited`) por endpoint que indique explícitamente cómo obtener el estado previo.
 
+## Reportes, Estadísticas y Archivos Descargables
+
+Se implementó el módulo de reportes, que permite consultar y descargar archivos generados bajo demanda a partir de los datos de inscripciones, respetando los roles y la propiedad de los eventos.
+
+### Endpoints
+
+| Método | Ruta | Acceso | Descripción |
+|---|---|---|---|
+| `GET` | `/api/reports/events/{eventId}/registrations.pdf` | Organizador propietario o ADMIN | Listado de inscritos en formato PDF |
+| `GET` | `/api/reports/events/{eventId}/registrations.xlsx` | Organizador propietario o ADMIN | Listado de inscritos en formato Excel |
+| `GET` | `/api/registrations/{id}/certificate.pdf` | Participante propietario | Comprobante de una inscripción confirmada |
+
+Ambos endpoints de listado aceptan filtros opcionales por rango de fechas (`from`, `to`, formato `yyyy-MM-dd`).
+
+### Reglas de negocio aplicadas
+
+- Los reportes de un evento solo pueden generarlos el organizador dueño del evento o un usuario con rol `ADMIN`.
+- El comprobante de inscripción solo puede descargarlo el participante propietario de esa inscripción.
+- El comprobante solo se genera si la inscripción está en estado `CONFIRMED`; en cualquier otro caso, se responde `409 Conflict`.
+- Los archivos se generan bajo demanda (no se almacenan en disco ni en base de datos).
+
+### Encabezados de respuesta
+
+Ambos tipos de reporte responden con `Content-Type` y `Content-Disposition` correctos:
+
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="registrations-event-1.pdf"
+
+### Librerías utilizadas
+
+- **Apache POI** (`poi-ooxml`), para la generación de archivos Excel (`.xlsx`).
+- **OpenPDF**, para la generación de archivos PDF.
+
+### Estructura
+
+```text
+src/main/java/ec/edu/ups/icc/proyectointegrador/reports
+├── controllers
+│   └── ReportController.java
+└── services
+    ├── ReportService.java
+    └── impl
+        └── ReportServiceImpl.java
+```
+
+### Pruebas realizadas
+
+Se generaron ambos reportes (PDF y Excel) de un evento con inscripciones reales, autenticado como usuario `ADMIN`. Ambos archivos se descargaron correctamente, con las fechas de inscripción mostradas en hora de Ecuador (ver sección de Zona Horaria).
+
 ### Documentación capturas
 
 #### Roles
@@ -1464,4 +1513,6 @@ El campo `previous_value` no se completa automáticamente para operaciones de ac
 ### Auditorias
 ![Registro de auditoría verificado en PostgreSQL](/assets/audit-postgres.png)
 
-
+### Reportes
+![Reporte PDF de inscritos por evento](/assets/report-pdf.png)
+![Reporte Excel de inscritos por evento](/assets/report-excel.png)

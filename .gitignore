@@ -52,3 +52,6 @@ logs/
 ### Operating system ###
 .DS_Store
 Thumbs.db
+
+*.pdf
+*.xlsx
