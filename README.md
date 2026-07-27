@@ -1379,6 +1379,58 @@ Se documento la API Swagger/OpenAPI, para visualizar los enpoints disponibles.
 
 Cada endpoint incluye una descripción de su función, los permisos requeridos y respuestas HTTP que es capaz de generar. Usualmente 200, 201, 400, 401, 402, 404 y 409
 
+
+## Auditoría
+
+Se implementó registro automático de operaciones críticas mediante un aspecto de Spring AOP (`AuditAspect`), que intercepta toda petición `POST`, `PUT`, `PATCH` y `DELETE` que llega a cualquier `@RestController` del sistema, sin requerir cambios en los controladores existentes de otros módulos.
+
+### Qué se registra
+
+Por cada operación se guarda:
+
+| Campo | Origen |
+|---|---|
+| `actor_id` | Usuario autenticado, resuelto desde el JWT vía `UserRepository`. `null` si la petición es anónima |
+| `action` | Derivada automáticamente del método HTTP + recurso (ej. `POST_CATEGORIES`, `PATCH_REGISTRATIONS`) |
+| `resource_type` | Nombre del controlador sin el sufijo `Controller` (ej. `CategoriesController` → `CATEGORIES`) |
+| `resource_id` | Extraído del `@PathVariable` de la ruta si existe, o del campo `id` de la respuesta cuando la operación es una creación |
+| `new_value` | Cuerpo de la petición (`@RequestBody`), serializado a JSON, con campos sensibles (`password`, `passwordHash`, `token`, `accessToken`, `refreshToken`) enmascarados como `***` |
+| `result` | `SUCCESS` o `FAILED`, según si la operación lanzó una excepción |
+| `ip_address`, `http_method`, `endpoint` | Extraídos directamente de la petición HTTP |
+| `correlation_id` | UUID generado por cada petición, para poder correlacionar con logs técnicos |
+
+### Diseño no invasivo
+
+El registro se implementó completamente con AOP, interceptando los controladores desde fuera, sin necesidad de modificar ningún servicio existente de los módulos de usuarios, categorías, eventos, sesiones o inscripciones.
+
+El guardado corre en una transacción independiente (`REQUIRES_NEW`) con manejo de errores propio: si el registro de auditoría falla por cualquier motivo, nunca afecta ni interrumpe la petición real del usuario.
+
+### Estructura
+
+```text
+src/main/java/ec/edu/ups/icc/proyectointegrador/audit
+├── aspects
+│   └── AuditAspect.java
+├── entities
+│   └── AuditLogEntity.java
+├── enums
+│   └── AuditResult.java
+├── repositories
+│   └── AuditLogRepository.java
+└── services
+    ├── AuditService.java
+    └── impl
+        └── AuditServiceImpl.java
+```
+
+### Prueba realizada
+
+Se inició sesión como usuario `ADMIN` y se creó una categoría nueva mediante `POST /api/categories`. Se verificó directamente en PostgreSQL que el registro de auditoría se guardó correctamente, con el `actor_id` del usuario autenticado, `action: POST_CATEGORIES`, `result: SUCCESS`, y sin exponer ningún dato sensible.
+
+### Limitación conocida
+
+El campo `previous_value` no se completa automáticamente para operaciones de actualización, ya que requeriría cargar el estado anterior del recurso antes de cada operación de forma genérica para cualquier entidad del sistema. Actualmente solo se registra `new_value` (el cuerpo de la petición). Esto podría extenderse en una siguiente iteración agregando una anotación personalizada (`@Audited`) por endpoint que indique explícitamente cómo obtener el estado previo.
+
 ### Documentación capturas
 
 #### Roles
@@ -1408,5 +1460,8 @@ Cada endpoint incluye una descripción de su función, los permisos requeridos y
 #### Categorias
 
 ![Categorias Swagger](/assets/categoriasSwagger.png)
+
+### Auditorias
+![Registro de auditoría verificado en PostgreSQL](/assets/audit-postgres.png)
 
 
