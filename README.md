@@ -1480,6 +1480,54 @@ src/main/java/ec/edu/ups/icc/proyectointegrador/reports
 
 Se generaron ambos reportes (PDF y Excel) de un evento con inscripciones reales, autenticado como usuario `ADMIN`. Ambos archivos se descargaron correctamente, con las fechas de inscripción mostradas en hora de Ecuador (ver sección de Zona Horaria).
 
+## Zona Horaria
+
+La API maneja correctamente la diferencia entre el almacenamiento interno y la presentación de fechas al usuario, siguiendo dos reglas separadas:
+
+### Almacenamiento: siempre en UTC
+
+Toda fecha se guarda en la base de datos en UTC. Esto se garantiza mediante:
+
+```yaml
+spring:
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+```
+
+Las columnas de fecha en PostgreSQL usan el tipo `TIMESTAMPTZ`, y las entidades JPA usan `OffsetDateTime`, preservando siempre el desplazamiento horario de forma explícita.
+
+### Intercambio: formato ISO 8601
+
+Los endpoints de la API devuelven las fechas en formato ISO 8601 con offset (ej. `2026-07-22T22:44:00-05:00`), tal como lo serializa Jackson por defecto para `OffsetDateTime`. Esto permite que cualquier cliente (frontend, Postman, otro backend) interprete la fecha exacta sin ambigüedad, independientemente de en qué zona horaria se encuentre.
+
+### Presentación: hora de negocio (América/Guayaquil)
+
+Para los reportes descargables (PDF y Excel del módulo de Reportes), donde el destinatario final es una persona y no un sistema, las fechas se convierten explícitamente a la zona horaria de Ecuador antes de mostrarse, usando la utilidad `TimeZoneUtils`:
+
+```java
+public static final ZoneId BUSINESS_ZONE = ZoneId.of("America/Guayaquil");
+
+public static ZonedDateTime toBusinessZone(OffsetDateTime instant) {
+    return instant.atZoneSameInstant(BUSINESS_ZONE);
+}
+```
+
+Esto asegura que, por ejemplo, una inscripción guardada como `2026-07-23T03:44:00Z` (UTC) se muestre en los reportes como `22/07/2026 22:44` (hora de Ecuador, UTC-5), que es la hora real en la que ocurrió el evento para el usuario.
+
+### Estructura
+
+```text
+src/main/java/ec/edu/ups/icc/proyectointegrador/core/utils
+└── TimeZoneUtils.java
+```
+
+### Verificación
+
+Se comparó la hora de un registro de inscripción en la base de datos (almacenada en UTC) contra la hora mostrada en el reporte PDF generado, confirmando la conversión correcta a horario de Ecuador (UTC-5).
+
 ### Documentación capturas
 
 #### Roles
