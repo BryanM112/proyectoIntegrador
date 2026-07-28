@@ -15,7 +15,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import ec.edu.ups.icc.proyectointegrador.reports.services.ReportService;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import ec.edu.ups.icc.proyectointegrador.core.config.OpenApiConfig;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+
 @RestController
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 public class ReportController {
 
     private static final MediaType XLSX_MEDIA_TYPE =
@@ -28,6 +34,7 @@ public class ReportController {
     }
 
     @GetMapping(value = "/reports/events/{eventId}/registrations.pdf")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<byte[]> registrationsPdf(
             @PathVariable Long eventId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -45,6 +52,7 @@ public class ReportController {
     }
 
     @GetMapping(value = "/reports/events/{eventId}/registrations.xlsx")
+    @PreAuthorize("hasAnyRole('ADMIN', 'ORGANIZER')")
     public ResponseEntity<byte[]> registrationsExcel(
             @PathVariable Long eventId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -62,6 +70,7 @@ public class ReportController {
     }
 
     @GetMapping(value = "/registrations/{id}/certificate.pdf")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<byte[]> certificatePdf(
             @PathVariable Long id,
             Authentication authentication

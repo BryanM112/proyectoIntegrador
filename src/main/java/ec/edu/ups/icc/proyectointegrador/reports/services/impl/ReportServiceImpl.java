@@ -3,7 +3,16 @@ package ec.edu.ups.icc.proyectointegrador.reports.services.impl;
 import java.io.ByteArrayOutputStream;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
+
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.BusinessRuleException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.InternalServerException;
+import ec.edu.ups.icc.proyectointegrador.core.exceptions.ResourceNotFoundException;
+
+import java.time.ZonedDateTime;
+import java.util.Date;
+
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.CreationHelper;
 
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -53,6 +62,7 @@ public class ReportServiceImpl implements ReportService {
     @Override
     @Transactional(readOnly = true)
     public byte[] generateRegistrationsPdf(Long eventId, LocalDate from, LocalDate to, Authentication authentication) {
+        validateDateRange(from, to);
         EventEntity event = findEventOrThrow(eventId);
         requireOwnerOrAdmin(event, authentication);
 
@@ -91,13 +101,14 @@ public class ReportServiceImpl implements ReportService {
             document.close();
             return output.toByteArray();
         } catch (Exception ex) {
-            throw new IllegalStateException("No se pudo generar el reporte PDF", ex);
+            throw new InternalServerException("No se pudo generar el reporte PDF", ex);
         }
     }
 
     @Override
     @Transactional(readOnly = true)
     public byte[] generateRegistrationsExcel(Long eventId, LocalDate from, LocalDate to, Authentication authentication) {
+        validateDateRange(from, to);
         EventEntity event = findEventOrThrow(eventId);
         requireOwnerOrAdmin(event, authentication);
 
@@ -106,6 +117,18 @@ public class ReportServiceImpl implements ReportService {
 
         try (XSSFWorkbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Inscritos");
+
+            CreationHelper creationHelper =
+            workbook.getCreationHelper();
+
+            CellStyle dateStyle =
+            workbook.createCellStyle();
+
+            dateStyle.setDataFormat(
+                creationHelper
+                    .createDataFormat()
+                    .getFormat("dd/mm/yyyy hh:mm")
+            );
 
             Row header = sheet.createRow(0);
             String[] columns = {"Participante", "Email", "Estado", "Fecha de inscripcion", "Codigo"};
@@ -122,7 +145,25 @@ public class ReportServiceImpl implements ReportService {
                 row.createCell(0).setCellValue(participant.getFirstName() + " " + participant.getLastName());
                 row.createCell(1).setCellValue(participant.getEmail());
                 row.createCell(2).setCellValue(registration.getStatus().name());
-                row.createCell(3).setCellValue(TimeZoneUtils.format(registration.getRegisteredAt()));
+                
+                ZonedDateTime businessDate =
+                    TimeZoneUtils.toBusinessZone(
+                        registration.getRegisteredAt()
+                    );
+
+                Cell dateCell = row.createCell(3);
+
+                if (businessDate != null) {
+                    dateCell.setCellValue(
+                        Date.from(
+                            businessDate.toInstant()
+                            )
+                        );
+
+                    dateCell.setCellStyle(dateStyle);
+                }
+
+
                 row.createCell(4).setCellValue(registration.getRegistrationCode().toString());
             }
 
@@ -134,7 +175,7 @@ public class ReportServiceImpl implements ReportService {
             workbook.write(output);
             return output.toByteArray();
         } catch (Exception ex) {
-            throw new IllegalStateException("No se pudo generar el reporte Excel", ex);
+            throw new InternalServerException("No se pudo generar el reporte Excel", ex);
         }
     }
 
@@ -142,7 +183,7 @@ public class ReportServiceImpl implements ReportService {
     @Transactional(readOnly = true)
     public byte[] generateCertificatePdf(Long registrationId, Authentication authentication) {
         RegistrationEntity registration = registrationRepository.findWithRelationsById(registrationId)
-                .orElseThrow(() -> new NoSuchElementException("Inscripción no encontrada"));
+                .orElseThrow(() -> new ResourceNotFoundException("Inscripción no encontrada"));
 
         UserEntity currentUser = resolveCurrentUser(authentication);
 
@@ -151,7 +192,7 @@ public class ReportServiceImpl implements ReportService {
         }
 
         if (registration.getStatus() != RegistrationStatus.CONFIRMED) {
-            throw new IllegalStateException("La inscripción no está confirmada");
+            throw new BusinessRuleException("La inscripción no está confirmada");
         }
 
         try {
@@ -182,19 +223,36 @@ public class ReportServiceImpl implements ReportService {
             document.close();
             return output.toByteArray();
         } catch (Exception ex) {
-            throw new IllegalStateException("No se pudo generar el comprobante", ex);
+            throw new InternalServerException("No se pudo generar el comprobante", ex);
         }
     }
 
     private EventEntity findEventOrThrow(Long eventId) {
         return eventRepository.findByIdAndDeletedFalse(eventId)
-                .orElseThrow(() -> new NoSuchElementException("Evento no encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Evento no encontrado"));
     }
 
-    private UserEntity resolveCurrentUser(Authentication authentication) {
-        return userRepository.findWithRolesByEmail(authentication.getName())
-                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
+private UserEntity resolveCurrentUser(
+        Authentication authentication
+) {
+    if (authentication == null
+            || !authentication.isAuthenticated()) {
+
+        throw new ResourceNotFoundException(
+                "Usuario autenticado no encontrado"
+        );
     }
+
+    return userRepository
+            .findWithRolesByEmail(
+                    authentication.getName()
+            )
+            .orElseThrow(() ->
+                    new ResourceNotFoundException(
+                            "Usuario autenticado no encontrado"
+                    )
+            );
+}
 
     private void requireOwnerOrAdmin(EventEntity event, Authentication authentication) {
         boolean isAdmin = authentication.getAuthorities().stream()
@@ -230,4 +288,21 @@ public class ReportServiceImpl implements ReportService {
         PdfPCell cell = new PdfPCell(new Paragraph(text, new Font(Font.HELVETICA, 11, Font.BOLD)));
         table.addCell(cell);
     }
+
+
+    private void validateDateRange(
+        LocalDate from,
+        LocalDate to
+) {
+    if (from != null
+            && to != null
+            && from.isAfter(to)) {
+
+        throw new BusinessRuleException(
+                "La fecha inicial no puede ser posterior a la fecha final"
+        );
+    }
+}
+
+
 }
