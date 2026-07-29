@@ -1564,3 +1564,27 @@ Se comparó la hora de un registro de inscripción en la base de datos (almacena
 ### Reportes
 ![Reporte PDF de inscritos por evento](/assets/report-pdf.png)
 ![Reporte Excel de inscritos por evento](/assets/report-excel.png)
+
+
+## Docker final
+
+Se configuró un dockerfile multietapa para compilar el backend. El archivo nos permite levantar de manera conjunta:
+
+```text
+Backend Spring Boot
+PostgreSQL 16
+Redis 7
+```
+PostgreSQL y Redis tienen volumenes persistentes para conservar sus datos entre reinicios. Además de configurarse para que el backend inicie cuando ambos estados estén disponibles.
+
+El sistema completo puede iniciarse con: docker compose up -d
+
+y se comprobó su funcionamiento.
+
+
+http://localhost:8080/api/actuator/health
+![healt](/assets/localhosthttp.png)
+
+http://localhost:8080/api/swagger-ui/index.html
+![swagger ui](/assets/SwaggerUIhttp.png)
+
