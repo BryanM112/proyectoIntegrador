@@ -15,9 +15,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import ec.edu.ups.icc.proyectointegrador.core.config.OpenApiConfig;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
 @RequestMapping("/roles")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @Tag(
         name = "Roles",
         description = "Consulta de los roles disponibles en el sistema"

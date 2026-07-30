@@ -27,9 +27,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import ec.edu.ups.icc.proyectointegrador.core.config.OpenApiConfig;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 
 @RestController
 @RequestMapping("/users")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @Tag(
         name = "Usuarios",
         description = "Administración de usuarios, estados y roles"

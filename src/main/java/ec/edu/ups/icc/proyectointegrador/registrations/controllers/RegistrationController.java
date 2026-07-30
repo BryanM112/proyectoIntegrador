@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import ec.edu.ups.icc.proyectointegrador.core.config.OpenApiConfig;
 import ec.edu.ups.icc.proyectointegrador.registrations.dtos.CancelRegistrationDto;
 import ec.edu.ups.icc.proyectointegrador.registrations.dtos.CreateRegistrationDto;
 import ec.edu.ups.icc.proyectointegrador.registrations.dtos.RegistrationResponseDto;
@@ -29,11 +30,13 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/registrations")
+@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @Tag(
         name = "Inscripciones",
         description = "Gestión de inscripciones de participantes en eventos académicos"

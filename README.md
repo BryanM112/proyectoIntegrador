@@ -1588,3 +1588,4 @@ http://localhost:8080/api/actuator/health
 http://localhost:8080/api/swagger-ui/index.html
 ![swagger ui](/assets/SwaggerUIhttp.png)
 
+

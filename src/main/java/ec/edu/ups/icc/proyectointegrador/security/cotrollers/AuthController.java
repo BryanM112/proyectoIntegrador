@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 
 import ec.edu.ups.icc.proyectointegrador.core.config.OpenApiConfig;
 import ec.edu.ups.icc.proyectointegrador.security.dtos.AuthResponseDto;
@@ -24,14 +25,12 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/auth")
-@SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME)
 @Tag(
         name = "Autenticación",
         description = """
@@ -149,6 +148,7 @@ public class AuthController {
 
     @Operation(
             summary = "Consultar el usuario autenticado",
+            security = @SecurityRequirement(name = OpenApiConfig.SECURITY_SCHEME_NAME),
             description = """
                     Devuelve los datos del usuario asociado al token JWT
                     enviado en la solicitud.
