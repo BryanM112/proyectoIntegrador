@@ -1692,3 +1692,30 @@ Participante intenta listar usuarios:
 Participante intenta listar roles:
 
 ![Participando listando roles](/assets/pruebas/usuarioRolesConParticipante.png)
+
+#### Categorías
+
+Listar categorías:
+
+![Listar categorías](/assets/pruebas/CategoríasListar.png)
+
+Crear categorías:
+
+![Crear categoría](/assets/pruebas/CategoríasCreadas.png)
+
+Crear categorías duplicadas:
+
+![Categorías duplicada](/assets/pruebas/CategoríaDuplicada.png)
+
+Categoría por Id:
+
+![Categorías por id](/assets/pruebas/CategoriaId.png)
+
+Actualizar categoría
+
+![Actualizar categoría](/assets/pruebas/CategoriasActualizadas.png)
+
+Consultar categoría inexistente
+
+![Categoría inexistente](/assets/pruebas/CategoriaInexistente.png)
+
