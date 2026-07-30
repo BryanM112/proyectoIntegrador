@@ -1588,4 +1588,107 @@ http://localhost:8080/api/actuator/health
 http://localhost:8080/api/swagger-ui/index.html
 ![swagger ui](/assets/SwaggerUIhttp.png)
 
+## Pruebas
 
+### Autenticación y seguridad
+
+#### Registro
+
+Register correcto:
+
+![Register correcto](/assets/pruebas/register.png)
+
+Correo duplicado:
+
+![Correo duplicado](/assets/pruebas/registerCorreoDuplicado.png)
+
+#### Login
+
+Login correcto:
+
+![Login correcto](/assets/pruebas/login.png)
+
+
+Login contraseña incorrecta:
+
+![Contraseña incorrecta](/assets/pruebas/logincontrasenaincorrecta.png)
+
+#### Me
+
+Acceso sin token:
+
+![Acceso sin token](/assets/pruebas/mesintoken.png)
+
+Acceso con token válido:
+
+![Acceso con token](/assets/pruebas/mecontoken.png)
+
+#### Refresh
+
+Refresh correcto:
+
+![Refresh correcto](/assets/pruebas/refreshCorrecto.png)
+
+Reutilizar refresh token anterior:
+
+![reutilizar refresh token](/assets/pruebas/refreshtokentokenanterior.png)
+
+#### logout
+
+Logout correcto:
+
+![Logout correcto](/assets/pruebas/logoutCorrecto.png)
+
+Refresh token después de que refresh token haya sido revocado:
+
+![Refresh token después de revocación](/assets/pruebas/refreshUsarrefreshtokendespuesdelogout.png)
+
+### Usuarios y roles
+
+#### Roles
+
+Listar roles:
+
+![Listar roles](/assets/pruebas/Roles.png)
+
+#### Usuarios
+
+Listar usuarios con paginación:
+
+![Listar usuarios con paginación](/assets/pruebas/usuraiosPaginacion.png)
+
+filtrar usuarios:
+
+![Filtrar usuarios](/assets/pruebas/usuariosFiltros.png)
+
+Usuario por ID:
+
+![Usuario por Id](/assets/pruebas/usuarioID.png)
+
+Usuario inexistente:
+
+![Usuario inexistente](/assets/pruebas/usuarioIdInexistente.png)
+
+Cambiar estado de usuario:
+
+![Cambio de estado](/assets/pruebas/userStatusBlocked.png)
+
+Login de usuario inactivo:
+
+![Login usuario bloquead](/assets/pruebas/userBLOCKED.png)
+
+Reactivar Usuario:
+
+![Reactivar usuario](/assets/pruebas/usuarioReactivado.png)
+
+Asignación de Rol Organizer:
+
+![Asignacion Organizer](/assets/pruebas/usuarioRolORGANIZERAsignado.png)
+
+Participante intenta listar usuarios:
+
+![Participando listando usuarios](/assets/pruebas/usuarioParticipanteListandoUsuarios.png)
+
+Participante intenta listar roles:
+
+![Participando listando roles](/assets/pruebas/usuarioRolesConParticipante.png)
